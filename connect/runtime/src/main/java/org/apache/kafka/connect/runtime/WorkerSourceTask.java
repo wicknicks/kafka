@@ -35,7 +35,7 @@ import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.handlers.ErrorHandler;
 import org.apache.kafka.connect.handlers.ProcessingContext;
-import org.apache.kafka.connect.handlers.Retry;
+import org.apache.kafka.connect.runtime.handlers.Retry;
 import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.header.Headers;
 import org.apache.kafka.connect.runtime.ConnectMetrics.MetricGroup;

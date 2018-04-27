@@ -1,4 +1,4 @@
-package org.apache.kafka.connect.handlers;
+package org.apache.kafka.connect.runtime.handlers;
 
 /**
  * What to do in between retries.
