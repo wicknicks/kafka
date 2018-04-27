@@ -10,11 +10,10 @@ public interface ErrorHandler {
      * Initialize the handler with connector, worker and handler config. The connector and worker configs are only
      * used for reporting purposes. the handler config is used to configure this instance of the handler.
      *
-     * @param connectorConfig the connector config
-     * @param workerConfig the worker config
+     * @param context the static context of this task
      * @param handlerConfig the properties used to configure this handler
      */
-    void init(Map<String, Object> connectorConfig, Map<String, Object> workerConfig, Map<String, Object> handlerConfig);
+    void init(GlobalContext context, Map<String, Object> handlerConfig);
 
     /**
      * This method is called for any error which occurs during the processing of a record in a Connect task.
