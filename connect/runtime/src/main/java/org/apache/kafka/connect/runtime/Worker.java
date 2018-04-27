@@ -29,10 +29,10 @@ import org.apache.kafka.connect.connector.ConnectorContext;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.handlers.ErrorHandler;
+import org.apache.kafka.connect.runtime.handlers.LogAndFailHandler;
 import org.apache.kafka.connect.runtime.handlers.Retry;
 import org.apache.kafka.connect.runtime.ConnectMetrics.LiteralSupplier;
 import org.apache.kafka.connect.runtime.ConnectMetrics.MetricGroup;
-import org.apache.kafka.connect.runtime.handlers.FailFastErrorHandler;
 import org.apache.kafka.connect.runtime.isolation.Plugins;
 import org.apache.kafka.connect.runtime.isolation.Plugins.ClassLoaderUsage;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -451,8 +451,8 @@ public class Worker {
                                        Converter valueConverter,
                                        HeaderConverter headerConverter,
                                        ClassLoader loader) {
-        ErrorHandler handler = new FailFastErrorHandler();
-        handler.init(connConfig.originals(), config.originals(), connConfig.originalsWithPrefix("error_handling"));
+        ErrorHandler handler = new LogAndFailHandler();
+        handler.init(null, connConfig.originalsWithPrefix("error_handling"));
         Retry retry = Enum.valueOf(Retry.class, connConfig.getString("error_handling.retry_type"));
         // Decide which type of worker task we need based on the type of task.
         if (task instanceof SourceTask) {

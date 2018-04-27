@@ -22,7 +22,7 @@ import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.handlers.ErrorHandler;
 import org.apache.kafka.connect.handlers.ProcessingContext;
 import org.apache.kafka.connect.runtime.handlers.Retry;
-import org.apache.kafka.connect.runtime.handlers.FailFastErrorHandler;
+import org.apache.kafka.connect.runtime.handlers.LogAndFailHandler;
 import org.apache.kafka.connect.transforms.Transformation;
 
 import java.util.Collections;
@@ -91,7 +91,7 @@ public class TransformationChain<R extends ConnectRecord<R>> {
 
     public static <R extends ConnectRecord<R>> TransformationChain<R> noOp() {
         return new TransformationChain<R>(Collections.<Transformation<R>>emptyList(),
-                new FailFastErrorHandler(), Retry.SLEEPING_WAIT);
+                new LogAndFailHandler(), Retry.SLEEPING_WAIT);
     }
 
 }
