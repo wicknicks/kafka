@@ -30,7 +30,12 @@ import org.apache.kafka.common.metrics.stats.Rate;
 import org.apache.kafka.common.metrics.stats.Total;
 import org.apache.kafka.common.metrics.stats.Value;
 import org.apache.kafka.common.utils.Time;
+import org.apache.kafka.connect.connector.ConnectRecord;
+import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.handlers.ErrorHandler;
+import org.apache.kafka.connect.handlers.ProcessingContext;
+import org.apache.kafka.connect.handlers.Retry;
 import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.header.Headers;
 import org.apache.kafka.connect.runtime.ConnectMetrics.MetricGroup;
@@ -48,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -88,6 +94,9 @@ class WorkerSourceTask extends WorkerTask {
     private boolean finishedStart = false;
     private boolean startedShutdownBeforeStartCompleted = false;
 
+    public ErrorHandler errorHandler;
+    public Retry retry;
+
     public WorkerSourceTask(ConnectorTaskId id,
                             SourceTask task,
                             TaskStatus.Listener statusListener,
@@ -100,6 +109,8 @@ class WorkerSourceTask extends WorkerTask {
                             OffsetStorageReader offsetReader,
                             OffsetStorageWriter offsetWriter,
                             WorkerConfig workerConfig,
+                            ErrorHandler errorHandler,
+                            Retry retry,
                             ConnectMetrics connectMetrics,
                             ClassLoader loader,
                             Time time) {
@@ -123,6 +134,9 @@ class WorkerSourceTask extends WorkerTask {
         this.flushing = false;
         this.stopRequestedLatch = new CountDownLatch(1);
         this.sourceTaskMetricsGroup = new SourceTaskMetricsGroup(id, connectMetrics);
+
+        this.errorHandler = errorHandler;
+        this.retry = retry;
     }
 
     @Override
@@ -158,6 +172,26 @@ class WorkerSourceTask extends WorkerTask {
         }
     }
 
+    public <V> V wrap(Callable<V> callable, ConnectRecord<?> record) {
+        do {
+            try {
+                return callable.call();
+            } catch (Exception e) {
+                ProcessingContext p = null;
+                switch (errorHandler.onError(p, e,
+                        new SchemaAndValue(record.keySchema(), record.key()),
+                        new SchemaAndValue(record.valueSchema(), record.value()))) {
+                    case FAIL: throw new ConnectException(e);
+                    case SKIP: return null;
+                    case RETRY:
+                        retry.sleep();
+                        break;
+                    default: throw new ConnectException("Unknown error handler response");
+                }
+            }
+        } while (true);
+    }
+
     @Override
     public void execute() {
         try {
@@ -184,7 +218,7 @@ class WorkerSourceTask extends WorkerTask {
                 if (toSend == null) {
                     log.trace("{} Nothing to send to Kafka. Polling source for additional records", this);
                     long start = time.milliseconds();
-                    toSend = task.poll();
+                    toSend = wrap(task::poll, null);
                     if (toSend != null) {
                         recordPollReturned(toSend.size(), time.milliseconds() - start);
                     }
@@ -216,7 +250,7 @@ class WorkerSourceTask extends WorkerTask {
         recordBatch(toSend.size());
         final SourceRecordWriteCounter counter = new SourceRecordWriteCounter(toSend.size(), sourceTaskMetricsGroup);
         for (final SourceRecord preTransformRecord : toSend) {
-            final SourceRecord record = transformationChain.apply(preTransformRecord);
+            final SourceRecord record = wrap(() -> transformationChain.apply(preTransformRecord), preTransformRecord);
 
             if (record == null) {
                 counter.skipRecord();
