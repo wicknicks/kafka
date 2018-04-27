@@ -16,15 +16,19 @@
  */
 package org.apache.kafka.connect.runtime.handlers;
 
-import org.apache.kafka.connect.data.SchemaAndValue;
+import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.handlers.ErrorHandler;
 import org.apache.kafka.connect.handlers.ErrorHandlerResponse;
 import org.apache.kafka.connect.handlers.GlobalContext;
 import org.apache.kafka.connect.handlers.ProcessingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public class FailFastErrorHandler implements ErrorHandler {
+public class LogAndFailHandler implements ErrorHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(LogAndFailHandler.class);
 
     private GlobalContext globalContext;
     private Map<String, Object> handlerConfig;
@@ -36,7 +40,8 @@ public class FailFastErrorHandler implements ErrorHandler {
     }
 
     @Override
-    public ErrorHandlerResponse onError(ProcessingContext context, Exception exception, SchemaAndValue key, SchemaAndValue value) {
+    public ErrorHandlerResponse onError(ProcessingContext context, Exception exception, ConnectRecord record) {
+        log.info("Task failure. context={} record={} exception={}", context, record, exception);
         return ErrorHandlerResponse.FAIL;
     }
 
@@ -47,7 +52,7 @@ public class FailFastErrorHandler implements ErrorHandler {
 
     @Override
     public String toString() {
-        return "FailFastErrorHandler{" +
+        return "LogAndFailHandler{" +
                 "globalContext=" + globalContext +
                 ", handlerConfig=" + handlerConfig +
                 '}';

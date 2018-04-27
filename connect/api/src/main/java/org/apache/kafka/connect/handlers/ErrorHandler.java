@@ -16,11 +16,12 @@
  */
 package org.apache.kafka.connect.handlers;
 
+import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.SchemaAndValue;
 
 import java.util.Map;
 
-public interface ErrorHandler {
+public interface ErrorHandler{
 
     /**
      * Initialize the handler with connector, worker and handler config. The connector and worker configs are only
@@ -36,11 +37,10 @@ public interface ErrorHandler {
      *
      * @param context the processing context
      * @param exception the Exception
-     * @param key the key of the record (might be null)
-     * @param value the value of the record (might be null if the error occurs during SourceTask#poll, for example).
+     * @param record the record which on input to this stage caused the failure (might be null)
      * @return a directive on how to handle this error.
      */
-    ErrorHandlerResponse onError(ProcessingContext context, Exception exception, SchemaAndValue key, SchemaAndValue value);
+    ErrorHandlerResponse onError(ProcessingContext context, Exception exception, ConnectRecord record);
 
     /**
      * Flush any outstanding data, and close this handler.

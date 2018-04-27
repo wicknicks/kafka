@@ -172,15 +172,12 @@ class WorkerSourceTask extends WorkerTask {
         }
     }
 
-    public <V> V wrap(Callable<V> callable, ConnectRecord<?> record) {
+    public <V> V wrap(Callable<V> callable, SourceRecord record) {
         do {
             try {
                 return callable.call();
             } catch (Exception e) {
-                ProcessingContext p = null;
-                switch (errorHandler.onError(p, e,
-                        new SchemaAndValue(record.keySchema(), record.key()),
-                        new SchemaAndValue(record.valueSchema(), record.value()))) {
+                switch (errorHandler.onError(null, e, record)) {
                     case FAIL: throw new ConnectException(e);
                     case SKIP: return null;
                     case RETRY:

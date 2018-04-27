@@ -16,7 +16,7 @@
  */
 package org.apache.kafka.connect.handlers;
 
-import org.apache.kafka.connect.data.SchemaAndValue;
+import org.apache.kafka.connect.connector.ConnectRecord;
 
 import java.util.Map;
 
@@ -52,12 +52,7 @@ public interface ProcessingContext {
     int attempt();
 
     /**
-     * @return the original key of the record which was sent to the first stage of processing
+     * @return the original record which was sent to the first stage of processing
      */
-    SchemaAndValue originalKey();
-
-    /**
-     * @return the original value of the record which was sent to the first stage of processing
-     */
-    SchemaAndValue originalValue();
+    ConnectRecord originalRecord();
 }
