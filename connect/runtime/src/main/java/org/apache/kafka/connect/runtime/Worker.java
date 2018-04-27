@@ -29,7 +29,7 @@ import org.apache.kafka.connect.connector.ConnectorContext;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.handlers.ErrorHandler;
-import org.apache.kafka.connect.handlers.Retry;
+import org.apache.kafka.connect.runtime.handlers.Retry;
 import org.apache.kafka.connect.runtime.ConnectMetrics.LiteralSupplier;
 import org.apache.kafka.connect.runtime.ConnectMetrics.MetricGroup;
 import org.apache.kafka.connect.runtime.handlers.FailFastErrorHandler;
