@@ -16,6 +16,7 @@
  */
 package org.apache.kafka.connect.handlers;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,5 +33,10 @@ public interface GlobalContext {
      * @return the configuration of the Connect worker
      */
     Map<String, Object> workerConfig();
+
+    /**
+     * @return an ordered list of stages. Connect will start with executing stage 0 and then move up the list.
+     */
+    List<Stage> stages();
 
 }
