@@ -1081,7 +1081,7 @@ public class DistributedHerder extends AbstractHerder implements Runnable {
         public void onConnectorConfigUpdate(String connector) {
             log.info("Connector {} config updated", connector);
 
-            // Stage the update and wake up the work thread. Connector config *changes* only need the one connector
+            // StageType the update and wake up the work thread. Connector config *changes* only need the one connector
             // to be bounced. However, this callback may also indicate a connector *addition*, which does require
             // a rebalance, so we need to be careful about what operation we request.
             synchronized (DistributedHerder.this) {
@@ -1096,7 +1096,7 @@ public class DistributedHerder extends AbstractHerder implements Runnable {
         public void onTaskConfigUpdate(Collection<ConnectorTaskId> tasks) {
             log.info("Tasks {} configs updated", tasks);
 
-            // Stage the update and wake up the work thread. No need to record the set of tasks here because task reconfigs
+            // StageType the update and wake up the work thread. No need to record the set of tasks here because task reconfigs
             // always need a rebalance to ensure offsets get committed.
             // TODO: As an optimization, some task config updates could avoid a rebalance. In particular, single-task
             // connectors clearly don't need any coordination.

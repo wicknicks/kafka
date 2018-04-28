@@ -16,24 +16,49 @@
  */
 package org.apache.kafka.connect.handlers;
 
-import java.util.Map;
-
-public interface Stage {
-
-    /**
-     * @return at what stage in processing did the error happen
-     */
-    StageType type();
+/**
+ * A logical stage in a Connect pipeline
+ */
+public enum StageType {
 
     /**
-     * @return name of the class executing this stage.
+     * When the task starts up
      */
-    Class<?> executingClass();
+    TASK_START,
 
     /**
-     * @return properties used to configure this stage
+     * when deserializing messages from Kafka into ConnectRecords
      */
-    Map<String, Object> config();
+    DESERIALIZATION,
 
+    /**
+     * when running any transform operation on a record
+     */
+    TRANSFORMATION,
+
+    /**
+     * when calling the poll() method on a SourceConnector
+     */
+    TASK_POLL,
+
+    /**
+     * when calling the put() method on a SinkConnector
+     */
+    TASK_PUT,
+
+    /**
+     * when serializing ConnectRecords to be produced into Kafka
+     */
+    SERIALIZATION,
+
+    /**
+     * when the worker is committing offsets for the task
+     */
+    COMMIT_OFFSETS,
+
+    /**
+     * When the task is shutting down
+     */
+    TASK_CLOSE,
 
 }
