@@ -34,6 +34,4 @@ public interface Stage {
      * @return properties used to configure this stage
      */
     Map<String, Object> config();
-
-
 }

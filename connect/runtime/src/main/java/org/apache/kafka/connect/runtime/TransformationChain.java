@@ -53,7 +53,7 @@ public class TransformationChain<R extends ConnectRecord<R>> {
                     if (record == null) break;
                 } catch (Exception e) {
                     ProcessingContext p = null;
-                    switch (errorHandler.onError(p, e, record)) {
+                    switch (errorHandler.onError(p)) {
                         case FAIL: throw e;
                         case SKIP: return null;
                         case RETRY:

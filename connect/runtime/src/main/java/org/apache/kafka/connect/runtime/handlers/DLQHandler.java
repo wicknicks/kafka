@@ -14,29 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.kafka.connect.handlers;
+package org.apache.kafka.connect.runtime.handlers;
 
-import java.util.List;
-import java.util.Map;
+public class DLQHandler extends RetryNTimesHandler {
 
-/**
- * Global static context for a Connect Task
- */
-public interface GlobalContext {
 
-    /**
-     * @return the configuration of the connector
-     */
-    Map<String, Object> connectorConfig();
-
-    /**
-     * @return the configuration of the Connect worker
-     */
-    Map<String, Object> workerConfig();
-
-    /**
-     * @return an ordered list of stages. Connect will start with executing stage 0 and then move up the list.
-     */
-    List<Stage> stages();
 
 }

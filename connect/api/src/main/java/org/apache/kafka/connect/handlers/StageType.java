@@ -61,4 +61,13 @@ public enum StageType {
      */
     TASK_CLOSE,
 
+    /**
+     * Producing to Kafka topic
+     */
+    KAFKA_PRODUCE,
+
+    /**
+     * Consuming from a Kafka topic
+     */
+    KAFKA_CONSUME
 }

@@ -17,6 +17,10 @@
 package org.apache.kafka.connect.handlers;
 
 import org.apache.kafka.connect.connector.ConnectRecord;
+import org.apache.kafka.connect.data.Struct;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * This object will contain all the runtime context for an error which occurs in the Connect framework while
@@ -25,9 +29,19 @@ import org.apache.kafka.connect.connector.ConnectRecord;
 public interface ProcessingContext {
 
     /**
+     * @return the configuration of the Connect worker
+     */
+    Map<String, Object> workerConfig();
+
+    /**
      * @return which task reported this error
      */
     String taskId();
+
+    /**
+     * @return an ordered list of stages. Connect will start with executing stage 0 and then move up the list.
+     */
+    List<Stage> stages();
 
     /**
      * @return at what stage did this operation fail (0 indicates first stage)
@@ -40,7 +54,22 @@ public interface ProcessingContext {
     int attempt();
 
     /**
-     * @return the original record which was sent to the first stage of processing
+     * @return the (epoch) time of failure
      */
-    ConnectRecord originalRecord();
+    long timeOfError();
+
+    /**
+     * The exception accompanying this failure (if any)
+     */
+    Exception exception();
+
+    /**
+     * @return the record which when input the current stage caused the failure.
+     */
+    ConnectRecord record();
+
+    /**
+     * create a {@link Struct} from the various parameters in this Context object.
+     */
+    Struct toStruct();
 }
