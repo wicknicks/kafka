@@ -16,34 +16,38 @@
  */
 package org.apache.kafka.connect.handlers;
 
+import org.apache.kafka.common.Configurable;
+import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.SchemaAndValue;
 
+import java.io.Closeable;
 import java.util.Map;
 
-public interface ErrorHandler{
+public interface ErrorHandler extends Configurable, Closeable {
 
     /**
      * Initialize the handler with connector, worker and handler config. The connector and worker configs are only
      * used for reporting purposes. the handler config is used to configure this instance of the handler.
-     *
-     * @param context the static context of this task
-     * @param handlerConfig the properties used to configure this handler
      */
-    void init(GlobalContext context, Map<String, Object> handlerConfig);
+    void init();
+
+    /**
+     * @return the ConfigDef for this handler
+     */
+    ConfigDef config();
 
     /**
      * This method is called for any error which occurs during the processing of a record in a Connect task.
      *
      * @param context the processing context
-     * @param exception the Exception
-     * @param record the record which on input to this stage caused the failure (might be null)
      * @return a directive on how to handle this error.
      */
-    ErrorHandlerResponse onError(ProcessingContext context, Exception exception, ConnectRecord record);
+    ErrorHandlerResponse onError(ProcessingContext context);
 
     /**
      * Flush any outstanding data, and close this handler.
      */
-    void stop();
+    @Override
+    void close();
 }
