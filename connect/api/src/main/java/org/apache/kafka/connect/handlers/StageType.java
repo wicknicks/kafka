@@ -27,11 +27,6 @@ public enum StageType {
     TASK_START,
 
     /**
-     * when deserializing messages from Kafka into ConnectRecords
-     */
-    DESERIALIZATION,
-
-    /**
      * when running any transform operation on a record
      */
     TRANSFORMATION,
@@ -47,9 +42,19 @@ public enum StageType {
     TASK_PUT,
 
     /**
-     * when serializing ConnectRecords to be produced into Kafka
+     * when using the key converter to serialize/deserialize keys in ConnectRecords
      */
-    SERIALIZATION,
+    KEY_CONVERTER,
+
+    /**
+     * when using the value converter to serialize/deserialize values in ConnectRecords
+     */
+    VALUE_CONVERTER,
+
+    /**
+     * when using the header converter to serialize/deserialize headers in ConnectRecords
+     */
+    HEADER_CONVERTER,
 
     /**
      * when the worker is committing offsets for the task

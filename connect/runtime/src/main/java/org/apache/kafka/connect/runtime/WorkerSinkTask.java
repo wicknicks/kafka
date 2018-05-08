@@ -37,9 +37,12 @@ import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
+import org.apache.kafka.connect.handlers.ErrorHandler;
+import org.apache.kafka.connect.handlers.ErrorHandlerResponse;
 import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.header.Headers;
 import org.apache.kafka.connect.runtime.ConnectMetrics.MetricGroup;
+import org.apache.kafka.connect.runtime.handlers.TaskProcessingContext;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.apache.kafka.connect.storage.Converter;
@@ -89,6 +92,8 @@ class WorkerSinkTask extends WorkerTask {
     private boolean pausedForRedelivery;
     private boolean committing;
 
+    private final TaskProcessingContext pctx;
+
     public WorkerSinkTask(ConnectorTaskId id,
                           SinkTask task,
                           TaskStatus.Listener statusListener,
@@ -123,6 +128,7 @@ class WorkerSinkTask extends WorkerTask {
         this.commitFailures = 0;
         this.sinkTaskMetricsGroup = new SinkTaskMetricsGroup(id, connectMetrics);
         this.sinkTaskMetricsGroup.recordOffsetSequenceNumber(commitSeqno);
+        this.pctx = null;
     }
 
     @Override
@@ -421,17 +427,27 @@ class WorkerSinkTask extends WorkerTask {
     }
 
     private ConsumerRecords<byte[], byte[]> pollConsumer(long timeoutMs) {
-        ConsumerRecords<byte[], byte[]> msgs = consumer.poll(timeoutMs);
+        ErrorHandler handler = null;
+        boolean retry;
+        do {
+            try {
+                ConsumerRecords<byte[], byte[]> msgs = consumer.poll(timeoutMs);
 
-        // Exceptions raised from the task during a rebalance should be rethrown to stop the worker
-        if (rebalanceException != null) {
-            RuntimeException e = rebalanceException;
-            rebalanceException = null;
-            throw e;
-        }
+                // Exceptions raised from the task during a rebalance should be rethrown to stop the worker
+                if (rebalanceException != null) {
+                    RuntimeException e = rebalanceException;
+                    rebalanceException = null;
+                    throw e;
+                }
 
-        sinkTaskMetricsGroup.recordRead(msgs.count());
-        return msgs;
+                sinkTaskMetricsGroup.recordRead(msgs.count());
+                return msgs;
+            } catch (org.apache.kafka.common.errors.RetriableException e) {
+                retry = handler.onError(pctx) == ErrorHandlerResponse.RETRY;
+            }
+        } while (retry);
+
+        throw new ConnectException("Unexpected");
     }
 
     private KafkaConsumer<byte[], byte[]> createConsumer() {

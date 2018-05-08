@@ -17,11 +17,9 @@
 package org.apache.kafka.connect.runtime;
 
 import org.apache.kafka.connect.connector.ConnectRecord;
-import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.handlers.ErrorHandler;
 import org.apache.kafka.connect.handlers.ProcessingContext;
-import org.apache.kafka.connect.runtime.handlers.Retry;
 import org.apache.kafka.connect.runtime.handlers.LogAndFailHandler;
 import org.apache.kafka.connect.transforms.Transformation;
 
@@ -33,12 +31,10 @@ public class TransformationChain<R extends ConnectRecord<R>> {
 
     private final List<Transformation<R>> transformations;
     private final ErrorHandler errorHandler;
-    private final Retry retry;
 
-    public TransformationChain(List<Transformation<R>> transformations, ErrorHandler errorHandler, Retry retry) {
+    public TransformationChain(List<Transformation<R>> transformations, ErrorHandler errorHandler) {
         this.transformations = transformations;
         this.errorHandler = errorHandler;
-        this.retry = retry;
     }
 
     public R apply(R record) {
@@ -56,9 +52,7 @@ public class TransformationChain<R extends ConnectRecord<R>> {
                     switch (errorHandler.onError(p)) {
                         case FAIL: throw e;
                         case SKIP: return null;
-                        case RETRY:
-                            retry.sleep();
-                            break;
+                        case RETRY: break;
                         default: throw new ConnectException("Unknown error handler response");
                     }
                 }
@@ -89,7 +83,7 @@ public class TransformationChain<R extends ConnectRecord<R>> {
 
     public static <R extends ConnectRecord<R>> TransformationChain<R> noOp() {
         return new TransformationChain<R>(Collections.<Transformation<R>>emptyList(),
-                new LogAndFailHandler(), Retry.SLEEPING_WAIT);
+                new LogAndFailHandler());
     }
 
 }
