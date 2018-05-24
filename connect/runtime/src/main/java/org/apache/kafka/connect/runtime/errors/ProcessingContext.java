@@ -53,11 +53,23 @@ public class ProcessingContext {
     }
 
     /**
+     * Only one instance of this class is meant to exist per task in a JVM. This method resets the internal fields
+     * for every new record that is about to be processed.
+     */
+    private void reset() {
+        attempt = 0;
+        position = null;
+        klass = null;
+        result = null;
+    }
+
+    /**
      * set the record consumed from Kafka in a sink connector.
      * @param consumedMessage the record
      */
     public void consumerRecord(ConsumerRecord<byte[], byte[]> consumedMessage) {
         this.consumedMessage = consumedMessage;
+        reset();
     }
 
     /**
@@ -80,6 +92,7 @@ public class ProcessingContext {
      */
     public void sourceRecord(SourceRecord record) {
         this.sourceRecord = record;
+        reset();
     }
 
     /**
