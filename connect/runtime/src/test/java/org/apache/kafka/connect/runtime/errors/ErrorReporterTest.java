@@ -109,10 +109,11 @@ public class ErrorReporterTest {
 
         ProcessingContext context = processingContext();
 
+        // reporting a context without an error should not cause any errors.
         logReporter.report(context);
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testNoopOnEnabledLogReporter() {
         LogReporter logReporter = new LogReporter();
         logReporter.configure(config(LogReporter.LOG_ENABLE, "true"));
@@ -120,6 +121,7 @@ public class ErrorReporterTest {
 
         ProcessingContext context = processingContext();
 
+        // reporting a context without an error should not cause any errors.
         logReporter.report(context);
     }
 
