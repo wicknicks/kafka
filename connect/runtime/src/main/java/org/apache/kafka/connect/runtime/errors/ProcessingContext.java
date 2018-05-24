@@ -27,15 +27,19 @@ import java.util.Collections;
  */
 public class ProcessingContext {
 
-    private Stage position;
-    private Class<?> klass;
+    private final Collection<ErrorReporter> reporters;
+
     private ConsumerRecord<byte[], byte[]> consumedMessage;
     private SourceRecord sourceRecord;
 
-    private final Collection<ErrorReporter> reporters;
-    private Result<?> result;
+    /**
+     * the following fields need to be reset every time a new record is seen.
+     */
 
+    private Stage position;
+    private Class<?> klass;
     private int attempt;
+    private Throwable error;
 
     /**
      * Create a ProcessingContext object with no error reporters.
@@ -60,7 +64,7 @@ public class ProcessingContext {
         attempt = 0;
         position = null;
         klass = null;
-        result = null;
+        error = null;
     }
 
     /**
@@ -125,13 +129,6 @@ public class ProcessingContext {
     }
 
     /**
-     * @param result set the result of the operation.
-     */
-    public void result(Result<?> result) {
-        this.result = result;
-    }
-
-    /**
      * a helper method to set both the stage and the class which
      * @param stage the stage
      * @param klass the class which will execute the operation in this stage.
@@ -150,13 +147,6 @@ public class ProcessingContext {
         }
     }
 
-    /**
-     * @return result of executing the operation.
-     */
-    public Result result() {
-        return this.result;
-    }
-
     @Override
     public String toString() {
         return "ProcessingContext{" +
@@ -164,7 +154,6 @@ public class ProcessingContext {
                 ", class=" + klass +
                 ", consumedMessage=" + consumedMessage +
                 ", sourceRecord=" + sourceRecord +
-                ", result=" + result +
                 ", attempt=" + attempt +
                 ", reporters=" + reporters +
                 '}';
@@ -185,9 +174,24 @@ public class ProcessingContext {
     }
 
     /**
-     * @return false, if the last operation encountered an error; true otherwise
+     * @return the error (if any) which was encountered while processing the current stage.
+     */
+    public Throwable error() {
+        return error;
+    }
+
+    /**
+     * the error (if any) which was encountered while processing the current stage.
+     * @param error the error
+     */
+    public void error(Throwable error) {
+        this.error = error;
+    }
+
+    /**
+     * @return true, if the last operation encountered an error; false otherwise
      */
     public boolean failed() {
-        return !this.result.success();
+        return this.error() != null;
     }
 }
