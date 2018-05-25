@@ -46,6 +46,7 @@ public class ErrorReporterTest {
 
     private static final String TOPIC = "test-topic";
     private static final String DLQ_TOPIC = "test-topic-errors";
+    private static final ConnectorTaskId ID = new ConnectorTaskId("ER-TEST", 2);
 
     @Mock
     KafkaProducer<byte[], byte[]> producer;
@@ -73,7 +74,7 @@ public class ErrorReporterTest {
 
     @Test
     public void testDLQConfigWithEmptyTopicName() {
-        DLQReporter dlqReporter = new DLQReporter(producer);
+        DLQReporter dlqReporter = new DLQReporter(ID, producer);
         dlqReporter.configure(config);
         dlqReporter.setMetrics(errorHandlingMetrics);
 
@@ -89,7 +90,7 @@ public class ErrorReporterTest {
 
     @Test
     public void testDLQConfigWithValidTopicName() {
-        DLQReporter dlqReporter = new DLQReporter(producer);
+        DLQReporter dlqReporter = new DLQReporter(ID, producer);
         dlqReporter.configure(config(DLQReporter.DLQ_TOPIC_NAME, DLQ_TOPIC));
         dlqReporter.setMetrics(errorHandlingMetrics);
 
@@ -105,7 +106,7 @@ public class ErrorReporterTest {
 
     @Test
     public void testReportDLQTwice() {
-        DLQReporter dlqReporter = new DLQReporter(producer);
+        DLQReporter dlqReporter = new DLQReporter(ID, producer);
         dlqReporter.configure(config(DLQReporter.DLQ_TOPIC_NAME, DLQ_TOPIC));
         dlqReporter.setMetrics(errorHandlingMetrics);
 

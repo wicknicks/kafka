@@ -501,7 +501,7 @@ public class Worker {
         // check if topic for dead letter queue exists
         String topic = connConfig.getString(DLQReporter.PREFIX + "." + DLQReporter.DLQ_TOPIC_NAME);
         if (topic != null && !topic.isEmpty()) {
-            DLQReporter reporter = DLQReporter.createAndSetup(config, connConfig, producerProps);
+            DLQReporter reporter = DLQReporter.createAndSetup(id, config, connConfig, producerProps);
             reporters.add(reporter);
         }
 
