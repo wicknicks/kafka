@@ -46,6 +46,8 @@ public class ConnectHeaders implements Headers {
 
     private static final int EMPTY_HASH = Objects.hash(new LinkedList<>());
 
+    public static final String HEADER_PREFIX = "__connect";
+
     /**
      * An immutable and therefore sharable empty iterator.
      */

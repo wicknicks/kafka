@@ -26,6 +26,7 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.WorkerConfig;
 import org.apache.kafka.connect.util.ConnectorTaskId;
@@ -67,7 +68,7 @@ public class DLQReporter implements ErrorReporter {
     public static final String DLQ_CONTEXT_HEADERS_ENABLE_DOC = "If true, add headers containing error context.";
     public static final boolean DLQ_CONTEXT_HEADERS_ENABLE_DEFAULT = false;
 
-    public static final String ERROR_HEADER_PREFIX = "__connect.errors";
+    public static final String ERROR_HEADER_PREFIX = ConnectHeaders.HEADER_PREFIX + ".errors";
     public static final String ERROR_HEADER_ORIG_TOPIC = "topic";
     public static final String ERROR_HEADER_ORIG_PARTITION = "partition";
     public static final String ERROR_HEADER_ORIG_OFFSET = "offset";
@@ -228,8 +229,8 @@ public class DLQReporter implements ErrorReporter {
         }
     }
 
-    private String prefix(String errorHeaderSuffix) {
-        return ERROR_HEADER_PREFIX + "." + errorHeaderSuffix;
+    private String prefix(String errorHeaderName) {
+        return ERROR_HEADER_PREFIX + "." + errorHeaderName;
     }
 
     static class DLQReporterConfig extends AbstractConfig {
