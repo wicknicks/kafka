@@ -59,7 +59,7 @@ object Kafka extends Logging {
     val jvmSignalHandlers = new ConcurrentHashMap[String, SignalHandler]().asScala
     val handler = new SignalHandler() {
       override def handle(signal: Signal) {
-        info(s"Terminating process due to signal $signal")
+        info(s"[arjun] Terminating process due to signal $signal")
         jvmSignalHandlers.get(signal.getName).foreach(_.handle(signal))
       }
     }
@@ -67,6 +67,8 @@ object Kafka extends Logging {
       val oldHandler = Signal.handle(new Signal(signalName), handler)
       if (oldHandler != null)
         jvmSignalHandlers.put(signalName, oldHandler)
+      else
+        info(s"[arjun] No old handler found for signal $signalName")
     }
 
     if (!OperatingSystem.IS_WINDOWS) {
