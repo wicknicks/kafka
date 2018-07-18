@@ -84,6 +84,8 @@ public class LoggingSignalHandler {
                 Object handler = jvmSignalHandlers.get(getName(signal));
                 if (handler != null)
                     handle(handler, signal);
+                else
+                    log.error("No handler for signal {}", signal);
                 return null;
             }
         };
@@ -97,5 +99,6 @@ public class LoggingSignalHandler {
         Object oldHandler = signalHandleMethod.invoke(null, signal, signalHandler);
         if (oldHandler != null)
             jvmSignalHandlers.put(signalName, oldHandler);
+        log.error("Registered handler for signal={}, oldHandler={}", signal, oldHandler);
     }
 }
