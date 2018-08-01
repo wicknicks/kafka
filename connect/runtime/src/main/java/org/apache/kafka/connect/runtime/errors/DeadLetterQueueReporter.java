@@ -72,7 +72,8 @@ public class DeadLetterQueueReporter implements ErrorReporter {
 
     public static DeadLetterQueueReporter createAndSetup(WorkerConfig workerConfig,
                                                          ConnectorTaskId id,
-                                                         SinkConnectorConfig sinkConfig, Map<String, Object> producerProps) {
+                                                         SinkConnectorConfig sinkConfig, Map<String, Object> producerProps,
+                                                         ErrorHandlingMetrics errorHandlingMetrics) {
         String topic = sinkConfig.dlqTopicName();
 
         try (AdminClient admin = AdminClient.create(workerConfig.originals())) {
@@ -90,7 +91,7 @@ public class DeadLetterQueueReporter implements ErrorReporter {
         }
 
         KafkaProducer<byte[], byte[]> dlqProducer = new KafkaProducer<>(producerProps);
-        return new DeadLetterQueueReporter(dlqProducer, sinkConfig, id);
+        return new DeadLetterQueueReporter(dlqProducer, sinkConfig, id, errorHandlingMetrics);
     }
 
     /**
@@ -99,14 +100,11 @@ public class DeadLetterQueueReporter implements ErrorReporter {
      * @param kafkaProducer a Kafka Producer to produce the original consumed records.
      */
     // Visible for testing
-    DeadLetterQueueReporter(KafkaProducer<byte[], byte[]> kafkaProducer, SinkConnectorConfig connConfig, ConnectorTaskId id) {
+    DeadLetterQueueReporter(KafkaProducer<byte[], byte[]> kafkaProducer, SinkConnectorConfig connConfig,
+                            ConnectorTaskId id, ErrorHandlingMetrics errorHandlingMetrics) {
         this.kafkaProducer = kafkaProducer;
         this.connConfig = connConfig;
         this.connectorTaskId = id;
-    }
-
-    @Override
-    public void metrics(ErrorHandlingMetrics errorHandlingMetrics) {
         this.errorHandlingMetrics = errorHandlingMetrics;
     }
 

@@ -33,9 +33,10 @@ public class LogReporter implements ErrorReporter {
 
     private ErrorHandlingMetrics errorHandlingMetrics;
 
-    public LogReporter(ConnectorTaskId id, ConnectorConfig connConfig) {
+    public LogReporter(ConnectorTaskId id, ConnectorConfig connConfig, ErrorHandlingMetrics errorHandlingMetrics) {
         this.id = id;
         this.connConfig = connConfig;
+        this.errorHandlingMetrics = errorHandlingMetrics;
     }
 
     /**
@@ -55,11 +56,6 @@ public class LogReporter implements ErrorReporter {
 
         log.error(message(context), context.error());
         errorHandlingMetrics.recordErrorLogged();
-    }
-
-    @Override
-    public void metrics(ErrorHandlingMetrics errorHandlingMetrics) {
-        this.errorHandlingMetrics = errorHandlingMetrics;
     }
 
     // Visible for testing
