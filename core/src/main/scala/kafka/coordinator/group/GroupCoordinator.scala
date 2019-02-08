@@ -109,6 +109,7 @@ class GroupCoordinator(val brokerId: Int,
                       protocolType: String,
                       protocols: List[(String, Array[Byte])],
                       responseCallback: JoinCallback): Unit = {
+    info(s"starting handle join group for $memberId in group $groupId")
     validateGroupStatus(groupId, ApiKeys.JOIN_GROUP).foreach { error =>
       responseCallback(joinError(memberId, error))
       return
@@ -123,6 +124,7 @@ class GroupCoordinator(val brokerId: Int,
           // only try to create the group if the group is UNKNOWN AND
           // the member id is UNKNOWN, if member is specified but group does not
           // exist we should reject the request.
+          info(s"$groupId unknown. making a new group and adding it to manager")
           if (memberId == JoinGroupRequest.UNKNOWN_MEMBER_ID) {
             val group = groupManager.addGroup(new GroupMetadata(groupId, Empty, time))
             doUnknownJoinGroup(group, requireKnownMemberId, clientId, clientHost, rebalanceTimeoutMs, sessionTimeoutMs, protocolType, protocols, responseCallback)
@@ -131,6 +133,7 @@ class GroupCoordinator(val brokerId: Int,
           }
 
         case Some(group) =>
+          info(s"found that some group exists ${group.quickMetadata}")
           if (memberId == JoinGroupRequest.UNKNOWN_MEMBER_ID) {
             doUnknownJoinGroup(group, requireKnownMemberId, clientId, clientHost, rebalanceTimeoutMs, sessionTimeoutMs, protocolType, protocols, responseCallback)
           } else {
@@ -765,6 +768,14 @@ class GroupCoordinator(val brokerId: Int,
 
     maybePrepareRebalance(group, s"Adding new member $memberId")
     group.removePendingMember(memberId)
+    info(s"removed $memberId. qk metadata=${group.quickMetadata}")
+
+    // attempt to complete JoinGroup
+    if (group.hasAllMembersJoined) {
+      info(s"all members have joined. attempting to complete join ${group.groupId}")
+      onCompleteJoin(group)
+    }
+
     member
   }
 
@@ -823,6 +834,7 @@ class GroupCoordinator(val brokerId: Int,
   }
 
   def tryCompleteJoin(group: GroupMetadata, forceComplete: () => Boolean) = {
+    info(s"trying to complete join ${group.quickMetadata}")
     group.inLock {
       if (group.hasAllMembersJoined)
         forceComplete()

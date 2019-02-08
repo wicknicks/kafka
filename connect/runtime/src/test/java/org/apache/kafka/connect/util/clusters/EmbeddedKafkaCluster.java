@@ -309,7 +309,7 @@ public class EmbeddedKafkaCluster extends ExternalResource {
     public KafkaConsumer<byte[], byte[]> createConsumer(Map<String, Object> consumerProps) {
         Map<String, Object> props = new HashMap<>(consumerProps);
 
-        putIfAbsent(props, GROUP_ID_CONFIG, UUID.randomUUID().toString());
+        putIfAbsent(props, GROUP_ID_CONFIG, "connect-integration-test-internal-" + UUID.randomUUID().toString());
         putIfAbsent(props, BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
         putIfAbsent(props, ENABLE_AUTO_COMMIT_CONFIG, "false");
         putIfAbsent(props, AUTO_OFFSET_RESET_CONFIG, "earliest");

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -55,7 +56,7 @@ public class ExampleConnectIntegrationTest {
     private static final int NUM_RECORDS_PRODUCED = 2000;
     private static final int NUM_TOPIC_PARTITIONS = 3;
     private static final int CONSUME_MAX_DURATION_MS = 5000;
-    private static final int CONNECTOR_SETUP_DURATION_MS = 60000;
+    private static final int CONNECTOR_SETUP_DURATION_MS = 15000;
     private static final int NUM_TASKS = 3;
     private static final String CONNECTOR_NAME = "simple-conn";
 
@@ -64,9 +65,12 @@ public class ExampleConnectIntegrationTest {
 
     @Before
     public void setup() throws IOException {
+        MDC.put("hello","world");
         // setup Connect worker properties
         Map<String, String> exampleWorkerProps = new HashMap<>();
         exampleWorkerProps.put(OFFSET_COMMIT_INTERVAL_MS_CONFIG, "30000");
+        exampleWorkerProps.put("session.timeout.ms", "30000");
+        exampleWorkerProps.put("consumer.session.timeout.ms", "30000");
 
         // setup Kafka broker properties
         Properties exampleBrokerProps = new Properties();
@@ -152,11 +156,17 @@ public class ExampleConnectIntegrationTest {
         try {
             ConnectorStateInfo info = connect.connectorStatus(CONNECTOR_NAME);
             return info != null && info.tasks().size() == NUM_TASKS
-                    && connectorHandle.tasks().stream().allMatch(th -> th.partitionsAssigned() == 1);
+                    && connectorHandle.tasks().stream().allMatch(th -> th.partitionsAssigned() == 1)
+                    && yay();
         } catch (Exception e) {
             // Log the exception and return that the partitions were not assigned
             log.error("Could not check connector state info.", e);
             return false;
         }
+    }
+
+    boolean yay() {
+        log.info("Yay! Conditions satisfied!");
+        return true;
     }
 }

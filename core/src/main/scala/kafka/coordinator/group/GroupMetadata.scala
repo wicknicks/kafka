@@ -254,6 +254,8 @@ private[group] class GroupMetadata(val groupId: String, initialState: GroupState
 
   def allMembers = members.keySet
 
+  def quickMetadata = "members=" + allMembers + ", num_awaiting_join=" + numMembersAwaitingJoin + ", " + pendingMembers
+
   def allMemberMetadata = members.values.toList
 
   def rebalanceTimeoutMs = members.values.foldLeft(0) { (timeout, member) =>

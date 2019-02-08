@@ -230,7 +230,7 @@ public final class WorkerCoordinator extends AbstractCoordinator implements Clos
         CircularIterator<String> memberIt = new CircularIterator<>(sorted(memberConfigs.keySet()));
         for (String connectorId : connectorsSorted) {
             String connectorAssignedTo = memberIt.next();
-            log.trace("Assigning connector {} to {}", connectorId, connectorAssignedTo);
+            log.debug("Assigning connector {} to {}", connectorId, connectorAssignedTo);
             List<String> memberConnectors = connectorAssignments.get(connectorAssignedTo);
             if (memberConnectors == null) {
                 memberConnectors = new ArrayList<>();
@@ -241,7 +241,7 @@ public final class WorkerCoordinator extends AbstractCoordinator implements Clos
         for (String connectorId : connectorsSorted) {
             for (ConnectorTaskId taskId : sorted(configSnapshot.tasks(connectorId))) {
                 String taskAssignedTo = memberIt.next();
-                log.trace("Assigning task {} to {}", taskId, taskAssignedTo);
+                log.debug("Assigning task {} to {}", taskId, taskAssignedTo);
                 List<ConnectorTaskId> memberTasks = taskAssignments.get(taskAssignedTo);
                 if (memberTasks == null) {
                     memberTasks = new ArrayList<>();

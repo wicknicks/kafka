@@ -502,6 +502,7 @@ public class Worker {
             retryWithToleranceOperator.reporters(sinkTaskReporters(id, sinkConfig, errorHandlingMetrics));
 
             Map<String, Object> consumerProps = consumerConfigs(id, config);
+            log.info("Creating new consumer for task {}", id);
             KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(consumerProps);
 
             return new WorkerSinkTask(id, (SinkTask) task, statusListener, initialState, config, configState, metrics, keyConverter,

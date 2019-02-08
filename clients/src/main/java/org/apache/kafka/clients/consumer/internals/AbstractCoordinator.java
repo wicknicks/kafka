@@ -799,15 +799,18 @@ public abstract class AbstractCoordinator implements Closeable {
      * Leave the current group and reset local generation/memberId.
      */
     public synchronized void maybeLeaveGroup() {
-        if (!coordinatorUnknown() && state != MemberState.UNJOINED && generation.isValid()) {
+        boolean coordinatorUnknown = coordinatorUnknown();
+        if (!coordinatorUnknown && state != MemberState.UNJOINED && generation.isValid()) {
             // this is a minimal effort attempt to leave the group. we do not
             // attempt any resending if the request fails or times out.
-            log.info("Sending LeaveGroup request to coordinator {}", coordinator);
+            log.info("Sending LeaveGroup request (for {} in {}) to coordinator {}", generation.memberId, groupId, coordinator);
             LeaveGroupRequest.Builder request =
                     new LeaveGroupRequest.Builder(groupId, generation.memberId);
             client.send(coordinator, request)
                     .compose(new LeaveGroupResponseHandler());
             client.pollNoWakeup();
+        } else {
+            log.info("Could not leave group (for {}) because coordinatorUnkown={}, state={}, generation.isValid={}", generation.memberId, coordinatorUnknown, state, generation.isValid());
         }
 
         resetGeneration();
@@ -1114,7 +1117,7 @@ public abstract class AbstractCoordinator implements Closeable {
         }
 
         public boolean isValid() {
-            return generationId != OffsetCommitRequest.DEFAULT_GENERATION_ID;
+            return this != NO_GENERATION;
         }
 
         @Override
