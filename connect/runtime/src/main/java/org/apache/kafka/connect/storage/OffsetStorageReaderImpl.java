@@ -106,6 +106,7 @@ public class OffsetStorageReaderImpl implements OffsetStorageReader {
             }
         }
 
+        log.info("Found offsets {} for task keys {}", result, partitions);
         return result;
     }
 }

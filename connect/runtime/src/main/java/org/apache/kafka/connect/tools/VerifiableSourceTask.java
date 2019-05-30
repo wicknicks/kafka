@@ -87,7 +87,7 @@ public class VerifiableSourceTask extends SourceTask {
         startingSeqno = seqno;
         throttler = new ThroughputThrottler(throughput, System.currentTimeMillis());
 
-        log.info("Started VerifiableSourceTask {}-{} producing to topic {} resuming from seqno {}", name, id, topic, startingSeqno);
+        log.info("Started VerifiableSourceTask task {} producing to topic {} resuming from seqno {}", id, topic, startingSeqno);
     }
 
     @Override
@@ -140,6 +140,7 @@ public class VerifiableSourceTask extends SourceTask {
 
     @Override
     public void stop() {
+        log.info("Stopping VerifiableSourceTask task {}, seqno: {}", id, seqno);
         throttler.wakeup();
     }
 }
