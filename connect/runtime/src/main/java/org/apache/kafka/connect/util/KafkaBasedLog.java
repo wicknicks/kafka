@@ -119,6 +119,8 @@ public class KafkaBasedLog<K, V> {
             public void run() {
             }
         };
+        log.info("Adding acks all to the KafkaBasedLog producer");
+        this.producerConfigs.putIfAbsent(ProducerConfig.ACKS_CONFIG, "all");
     }
 
     public void start() {

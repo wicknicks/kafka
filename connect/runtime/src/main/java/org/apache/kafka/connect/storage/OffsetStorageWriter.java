@@ -169,6 +169,7 @@ public class OffsetStorageWriter {
         return backingStore.set(offsetsSerialized, new Callback<Void>() {
             @Override
             public void onCompletion(Throwable error, Void result) {
+                log.debug("Completed wrting offsets {}, error?={}", toFlush, error != null);
                 boolean isCurrent = handleFinishWrite(flushId, error, result);
                 if (isCurrent && callback != null) {
                     callback.onCompletion(error, result);

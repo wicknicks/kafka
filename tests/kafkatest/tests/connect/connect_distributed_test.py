@@ -340,8 +340,7 @@ class ConnectDistributedTest(Test):
         wait_until(lambda: self._validate_file_output(self.FIRST_INPUT_LIST + self.SECOND_INPUT_LIST), timeout_sec=70, err_msg="Sink output file never converged to the same state as the input file")
 
     @cluster(num_nodes=6)
-    @matrix(clean=[True, False])
-    def test_bounce(self, clean):
+    def test_bounce(self, clean=True):
         """
         Validates that source and sink tasks that run continuously and produce a predictable sequence of messages
         run correctly and deliver messages exactly once when Kafka Connect workers undergo clean rolling bounces.
@@ -407,7 +406,7 @@ class ConnectDistributedTest(Test):
                 success = False
             if not allow_dups and duplicate_src_seqnos:
                 self.logger.error("Duplicate source sequence numbers for task " + str(task))
-                errors.append("Found duplicate source sequence numbers for task %d: %s" % (task, duplicate_src_seqnos))
+                errors.append("Found duplicate source sequence numbers for task %d: %s" % (task, duplicate_src_seqnos[0:20]))
                 success = False
 
 
@@ -427,7 +426,7 @@ class ConnectDistributedTest(Test):
                 success = False
             if not allow_dups and duplicate_sink_seqnos:
                 self.logger.error("Duplicate sink sequence numbers for task " + str(task))
-                errors.append("Found duplicate sink sequence numbers for task %d: %s" % (task, duplicate_sink_seqnos))
+                errors.append("Found duplicate sink sequence numbers for task %d: %s" % (task, duplicate_sink_seqnos[0:20]))
                 success = False
 
             # Validate source and sink match
