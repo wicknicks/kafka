@@ -155,6 +155,25 @@ object TestUtils extends Logging {
     (new Broker(id, host, port, ListenerName.forSecurityProtocol(securityProtocol), securityProtocol), epoch)
   }
 
+  def createBrokerConfigs(numConfigs: Int,
+                          zkConnect: String,
+                          enableControlledShutdown: Boolean = true,
+                          enableDeleteTopic: Boolean = true,
+                          interBrokerSecurityProtocol: Option[SecurityProtocol] = None,
+                          trustStoreFile: Option[File] = None,
+                          saslProperties: Option[Properties] = None,
+                          enablePlaintext: Boolean = true,
+                          enableSsl: Boolean = false,
+                          enableSaslPlaintext: Boolean = false,
+                          enableSaslSsl: Boolean = false,
+                          rackInfo: Map[Int, String] = Map(),
+                          logDirCount: Int = 1,
+                          enableToken: Boolean = false): Seq[Properties] = {
+    createBrokerConfigs(numConfigs, zkConnect, enableControlledShutdown, enableDeleteTopic,
+      interBrokerSecurityProtocol, trustStoreFile, saslProperties, enablePlaintext, enableSsl,
+      enableSaslPlaintext, enableSaslSsl, rackInfo, logDirCount, enableToken)
+  }
+
   /**
    * Create a test config for the provided parameters.
    *
