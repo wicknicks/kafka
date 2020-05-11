@@ -17,11 +17,14 @@
 package org.apache.kafka.connect.util.clusters;
 
 import org.apache.kafka.connect.cli.ConnectDistributed;
+import org.apache.kafka.connect.connector.Task;
+import org.apache.kafka.connect.runtime.AbstractHerder;
 import org.apache.kafka.connect.runtime.Connect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -108,5 +111,13 @@ public class WorkerHandle {
     @Override
     public int hashCode() {
         return Objects.hash(workerName, worker);
+    }
+
+    public List<Task> tasks(String connectorName) {
+        return ((AbstractHerder) (worker.herder())).tasks(connectorName);
+    }
+
+    public List<Task> tasks() {
+        return ((AbstractHerder) (worker.herder())).tasks();
     }
 }

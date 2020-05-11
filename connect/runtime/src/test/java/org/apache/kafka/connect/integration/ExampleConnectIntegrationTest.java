@@ -16,9 +16,11 @@
  */
 package org.apache.kafka.connect.integration;
 
+import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.runtime.rest.entities.ConnectorStateInfo;
 import org.apache.kafka.connect.storage.StringConverter;
 import org.apache.kafka.connect.util.clusters.EmbeddedConnectCluster;
+import org.apache.kafka.connect.util.clusters.WorkerHandle;
 import org.apache.kafka.test.IntegrationTest;
 import org.junit.After;
 import org.junit.Before;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -142,6 +145,19 @@ public class ExampleConnectIntegrationTest {
                 CONNECTOR_SETUP_DURATION_MS,
                 "Connector tasks were not assigned a partition each.");
 
+        Iterator<WorkerHandle> workerHandles = connect.workers().iterator();
+        for (int j = 0; workerHandles.hasNext(); j++) {
+            for (Task t : workerHandles.next().tasks(CONNECTOR_NAME)) {
+                MonitorableSinkConnector.MonitorableSinkTask task = (MonitorableSinkConnector.MonitorableSinkTask) t;
+                log.info("In worker {}, found task {} for connector {}", j, task.taskId(), task.connectorName());
+            }
+        }
+
+        for (Task t : connect.allTasks(CONNECTOR_NAME)) {
+            MonitorableSinkConnector.MonitorableSinkTask task = (MonitorableSinkConnector.MonitorableSinkTask) t;
+            log.info("->>>>>> Task Id {}, {}", task.connectorName(), task.taskId());
+        }
+
         // produce some messages into source topic partitions
         for (int i = 0; i < NUM_RECORDS_PRODUCED; i++) {
             connect.kafka().produce("test-topic", i % NUM_TOPIC_PARTITIONS, "key", "simple-message-value-" + i);
@@ -209,6 +225,8 @@ public class ExampleConnectIntegrationTest {
         int recordNum = connect.kafka().consume(NUM_RECORDS_PRODUCED, RECORD_TRANSFER_DURATION_MS, "test-topic").count();
         assertTrue("Not enough records produced by source connector. Expected at least: " + NUM_RECORDS_PRODUCED + " + but got " + recordNum,
                 recordNum >= NUM_RECORDS_PRODUCED);
+
+        connect.workers().forEach(e -> e.());
 
         // delete connector
         connect.deleteConnector(CONNECTOR_NAME);

@@ -93,6 +93,11 @@ public class Connect {
         return rest.adminUrl();
     }
 
+    // Visible for testing
+    public Herder herder() {
+        return herder;
+    }
+
     private class ShutdownHook extends Thread {
         @Override
         public void run() {

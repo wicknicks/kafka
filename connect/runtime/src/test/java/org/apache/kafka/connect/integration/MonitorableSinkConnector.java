@@ -20,6 +20,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
+import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.runtime.TestSinkConnector;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -115,6 +116,14 @@ public class MonitorableSinkConnector extends TestSinkConnector {
             taskHandle.recordTaskStart();
         }
 
+        public String connectorName() {
+            return connectorName;
+        }
+
+        public String taskId() {
+            return taskId;
+        }
+
         @Override
         public void open(Collection<TopicPartition> partitions) {
             log.debug("Opening {} partitions", partitions.size());
@@ -122,8 +131,16 @@ public class MonitorableSinkConnector extends TestSinkConnector {
             taskHandle.partitionsAssigned(partitions.size());
         }
 
+        int times = 100;
+
         @Override
         public void put(Collection<SinkRecord> records) {
+            if (times-- > 0) {
+                log.info("Throwing exception .............. " +
+                        "retrying at times = " + times + " with timeout now at 10sec");
+                context.timeout(10_000);
+            }
+
             for (SinkRecord rec : records) {
                 taskHandle.record();
                 TopicPartition tp = cachedTopicPartitions

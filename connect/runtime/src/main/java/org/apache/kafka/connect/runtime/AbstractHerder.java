@@ -25,6 +25,7 @@ import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigTransformer;
 import org.apache.kafka.common.config.ConfigValue;
 import org.apache.kafka.connect.connector.Connector;
+import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.connector.policy.ConnectorClientConfigOverridePolicy;
 import org.apache.kafka.connect.connector.policy.ConnectorClientConfigRequest;
 import org.apache.kafka.connect.errors.NotFoundException;
@@ -44,6 +45,8 @@ import org.apache.kafka.connect.storage.ConfigBackingStore;
 import org.apache.kafka.connect.storage.StatusBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.ConnectorTaskId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -87,6 +90,8 @@ import java.util.stream.Collectors;
  *    we have proper producer groups with fenced groups, there is not much else we can do.
  */
 public abstract class AbstractHerder implements Herder, TaskStatus.Listener, ConnectorStatus.Listener {
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractHerder.class);
 
     private final String workerId;
     protected final Worker worker;
@@ -638,4 +643,15 @@ public abstract class AbstractHerder implements Herder, TaskStatus.Listener, Con
         return keys;
     }
 
+    public List<Task> tasks(String connectorName) {
+        return worker.tasks(connectorName).stream()
+                .map(WorkerTask::task)
+                .collect(Collectors.toList());
+    }
+
+    public List<Task> tasks() {
+        return worker.tasks().stream()
+                .map(WorkerTask::task)
+                .collect(Collectors.toList());
+    }
 }

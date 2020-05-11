@@ -19,6 +19,7 @@ package org.apache.kafka.connect.util.clusters;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.common.utils.Exit;
+import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.runtime.rest.entities.ActiveTopicsInfo;
 import org.apache.kafka.connect.runtime.rest.entities.ConfigInfos;
@@ -643,6 +644,20 @@ public class EmbeddedConnectCluster {
             response.append((char) c);
         }
         return response.toString();
+    }
+
+    public List<Task> allTasks(String connectorName) {
+        return connectCluster.stream()
+                .map(w -> w.tasks(connectorName))
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    public List<Task> allTasks() {
+        return connectCluster.stream()
+                .map(WorkerHandle::tasks)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
     }
 
     public static class Builder {

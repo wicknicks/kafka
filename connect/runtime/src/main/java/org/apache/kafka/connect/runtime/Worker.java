@@ -73,6 +73,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -297,6 +298,18 @@ public class Worker {
         } finally {
             Plugins.compareAndSwapLoaders(savedLoader);
         }
+    }
+
+    public Collection<WorkerTask> tasks(String connectorName) {
+        final Pattern pattern = Pattern.compile(connectorName + "-\\d+");
+        return tasks.entrySet().stream()
+                .filter(e -> pattern.matcher(e.getKey().toString()).matches())
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
+    }
+
+    public Collection<WorkerTask> tasks() {
+        return tasks.values();
     }
 
     /**
