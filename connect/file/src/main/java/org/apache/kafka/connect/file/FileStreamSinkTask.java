@@ -19,6 +19,7 @@ package org.apache.kafka.connect.file;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -41,6 +42,7 @@ public class FileStreamSinkTask extends SinkTask {
 
     private String filename;
     private PrintStream outputStream;
+    private ErrantRecordReporter reporter;
 
     public FileStreamSinkTask() {
     }
@@ -58,15 +60,16 @@ public class FileStreamSinkTask extends SinkTask {
 
     @Override
     public void start(Map<String, String> props) {
+        this.reporter = context.reporter();
         filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
         if (filename == null) {
             outputStream = System.out;
         } else {
             try {
                 outputStream = new PrintStream(
-                    Files.newOutputStream(Paths.get(filename), StandardOpenOption.CREATE, StandardOpenOption.APPEND),
-                    false,
-                    StandardCharsets.UTF_8.name());
+                        Files.newOutputStream(Paths.get(filename), StandardOpenOption.CREATE, StandardOpenOption.APPEND),
+                        false,
+                        StandardCharsets.UTF_8.name());
             } catch (IOException e) {
                 throw new ConnectException("Couldn't find or create file '" + filename + "' for FileStreamSinkTask", e);
             }
@@ -75,9 +78,23 @@ public class FileStreamSinkTask extends SinkTask {
 
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
+        if (sinkRecords.isEmpty()) {
+            log.info("Returning because empty topic");
+            return;
+        }
+
         for (SinkRecord record : sinkRecords) {
             log.trace("Writing line to {}: {}", logFilename(), record.value());
-            outputStream.println(record.value());
+            try {
+                outputStream.println(record.value());
+            } catch (Throwable error) {
+                try {
+                    ErrantRecordReporter reporter = context.reporter();
+                    reporter.report(record, error);
+                } catch (NoSuchMethodError|NoClassDefFoundError e) {
+                    log.info("Boooooooooo!");
+                }
+            }
         }
     }
 

@@ -21,8 +21,11 @@ import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
+import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
+import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.source.SourceRecord;
+import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,14 +76,23 @@ public class RetryWithToleranceOperator {
     private final Time time;
     private ErrorHandlingMetrics errorHandlingMetrics;
 
+    private Converter converter;
+
     protected ProcessingContext context = new ProcessingContext();
 
     public RetryWithToleranceOperator(long errorRetryTimeout, long errorMaxDelayInMillis,
-                                      ToleranceType toleranceType, Time time) {
+                                      ToleranceType toleranceType, Time time, Converter converter) {
         this.errorRetryTimeout = errorRetryTimeout;
         this.errorMaxDelayInMillis = errorMaxDelayInMillis;
         this.errorToleranceType = toleranceType;
         this.time = time;
+        this.converter = converter;
+    }
+
+    public RetryWithToleranceOperator(long errorRetryTimeout, long errorMaxDelayInMillis,
+                                      ToleranceType toleranceType, Time time) {
+        // using default as jsonconverter
+        this(errorRetryTimeout, errorMaxDelayInMillis, toleranceType, time, new JsonConverter());
     }
 
     /**
@@ -108,6 +120,30 @@ public class RetryWithToleranceOperator {
                 context.report();
             }
         }
+    }
+
+    /**
+     * Record an out of band failure on a previously submitted SinkRecord. This should typially happen in the put()
+     * method, but stage and executingClass have been parametrized to allow for errors in other SinkTask methods as
+     * well.
+     *
+     * @param stage the stage of failure
+     * @param executingClass the class that was executing the stage.
+     * @param record the record that failed to execute, and needs to be reported.
+     */
+    public <V> void executeFailed(Stage stage, Class<?> executingClass, SinkRecord record) {
+        byte[] key = converter.fromConnectData(record.topic(), record.keySchema(), record.key());
+        byte[] val = converter.fromConnectData(record.topic(), record.valueSchema(), record.value());
+        context.consumerRecord(new ConsumerRecord<>(record.topic(),
+                record.kafkaPartition(),
+                record.kafkaOffset(),
+                // missing timestamp for now
+                key,
+                val
+        ));
+
+        context.currentContext(stage, executingClass);
+        context.failed();
     }
 
     /**
