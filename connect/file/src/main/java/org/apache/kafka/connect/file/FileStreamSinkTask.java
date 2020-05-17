@@ -64,7 +64,20 @@ public class FileStreamSinkTask extends SinkTask {
 
     @Override
     public void start(Map<String, String> props) {
-        this.reporter = context.reporter();
+        /*
+        without this try catch block, we observe that the worker starts up correctly, but starting a connector,
+        and then the task fails with the error:
+         [2020-05-16 18:51:58,723] ERROR WorkerSinkTask{id=fs-0} Task threw an uncaught and unrecoverable exception (org.apache.kafka.connect.runtime.WorkerTask:186)
+         java.lang.NoSuchMethodError: org.apache.kafka.connect.sink.SinkTaskContext.reporter()Lorg/apache/kafka/connect/sink/ErrantRecordReporter;
+         at org.apache.kafka.connect.file.FileStreamSinkTask.start(FileStreamSinkTask.java:67)
+         at org.apache.kafka.connect.runtime.WorkerSinkTask.initializeAndStart(WorkerSinkTask.java:305)
+        */
+        try {
+            this.reporter = context.reporter();
+        } catch (NoSuchMethodError e) {
+            log.warn("error reporter not available. running with an older runtime?");
+        }
+
         filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
         if (filename == null) {
             outputStream = System.out;
@@ -83,7 +96,7 @@ public class FileStreamSinkTask extends SinkTask {
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
         if (sinkRecords.isEmpty()) {
-            log.info("Returning because empty topic");
+            log.info("put() called with empty collection. returning.");
             return;
         }
 
@@ -99,10 +112,31 @@ public class FileStreamSinkTask extends SinkTask {
     }
 
     private void reportBadRecord(SinkRecord record) {
+        /* error raised here in older version of runtime is:
+        [2020-05-16 18:58:04,438] WARN Could not report error because of compatibility issues (org.apache.kafka.connect.file.FileStreamSinkTask:116)
+        java.lang.NoClassDefFoundError: org/apache/kafka/connect/sink/ErrantRecordReporter
+            at org.apache.kafka.connect.file.FileStreamSinkTask.reportBadRecord(FileStreamSinkTask.java:114)
+            at org.apache.kafka.connect.file.FileStreamSinkTask.put(FileStreamSinkTask.java:105)
+            at org.apache.kafka.connect.runtime.WorkerSinkTask.deliverMessages(WorkerSinkTask.java:546)
+            at org.apache.kafka.connect.runtime.WorkerSinkTask.poll(WorkerSinkTask.java:326)
+            at org.apache.kafka.connect.runtime.WorkerSinkTask.iteration(WorkerSinkTask.java:228)
+            at org.apache.kafka.connect.runtime.WorkerSinkTask.execute(WorkerSinkTask.java:196)
+            at org.apache.kafka.connect.runtime.WorkerTask.doRun(WorkerTask.java:184)
+            at org.apache.kafka.connect.runtime.WorkerTask.run(WorkerTask.java:234)
+            at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+            at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+            at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+            at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+            at java.lang.Thread.run(Thread.java:748)
+        Caused by: java.lang.ClassNotFoundException: org.apache.kafka.connect.sink.ErrantRecordReporter
+            at java.net.URLClassLoader.findClass(URLClassLoader.java:381)
+            at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+         */
         try {
             reporter.report(record, new RuntimeException("bad record, value=" + record.value()));
         } catch (NoClassDefFoundError | NoSuchMethodError e) {
-            log.warn("Could not report error because of compatibility issues: {}", e.getMessage());
+            // in a real connector, we would probably not want to print out the entire stacktrace.
+            log.warn("Could not report error because of compatibility issues", e);
         }
     }
 
