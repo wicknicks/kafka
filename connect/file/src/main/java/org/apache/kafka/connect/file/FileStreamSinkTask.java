@@ -53,6 +53,10 @@ public class FileStreamSinkTask extends SinkTask {
         this.outputStream = outputStream;
     }
 
+    public void errantRecordReporter(ErrantRecordReporter reporter) {
+        this.reporter = reporter;
+    }
+
     @Override
     public String version() {
         return new FileStreamSinkConnector().version();
@@ -85,16 +89,20 @@ public class FileStreamSinkTask extends SinkTask {
 
         for (SinkRecord record : sinkRecords) {
             log.trace("Writing line to {}: {}", logFilename(), record.value());
-            try {
-                outputStream.println(record.value());
-            } catch (Throwable error) {
-                try {
-                    ErrantRecordReporter reporter = context.reporter();
-                    reporter.report(record, error);
-                } catch (NoSuchMethodError|NoClassDefFoundError e) {
-                    log.info("Boooooooooo!");
-                }
+            String writableStr = String.valueOf(record.value());
+            if ("fail".equalsIgnoreCase(writableStr)) {
+                reportBadRecord(record);
+                continue;
             }
+            outputStream.println(writableStr);
+        }
+    }
+
+    private void reportBadRecord(SinkRecord record) {
+        try {
+            reporter.report(record, new RuntimeException("bad record, value=" + record.value()));
+        } catch (NoClassDefFoundError | NoSuchMethodError e) {
+            log.warn("Could not report error because of compatibility issues: {}", e.getMessage());
         }
     }
 

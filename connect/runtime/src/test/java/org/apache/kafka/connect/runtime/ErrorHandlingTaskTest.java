@@ -30,6 +30,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.data.Timestamp;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.runtime.distributed.ClusterConfigState;
@@ -253,7 +254,11 @@ public class ErrorHandlingTaskTest {
                 .put("modified", new Date(1474661402123L));
         SinkRecord record = new SinkRecord(TOPIC, 1, null, null, SCHEMA, struct, 42);
 
-        retryWithToleranceOperator.executeFailed(Stage.TASK_PUT, SinkTask.class, record);
+        PowerMock.replayAll();
+
+        retryWithToleranceOperator.executeFailed(Stage.TASK_PUT, SinkTask.class, record, new ConnectException("blah"));
+
+        PowerMock.verifyAll();
     }
 
     @Test

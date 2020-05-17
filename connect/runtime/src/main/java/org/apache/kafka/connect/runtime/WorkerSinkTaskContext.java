@@ -21,6 +21,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.IllegalWorkerStateException;
 import org.apache.kafka.connect.runtime.distributed.ClusterConfigState;
 import org.apache.kafka.connect.runtime.errors.ErrorReporter;
+import org.apache.kafka.connect.runtime.errors.RetryWithToleranceOperator;
+import org.apache.kafka.connect.runtime.errors.Stage;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.slf4j.Logger;
@@ -44,12 +46,12 @@ public class WorkerSinkTaskContext implements SinkTaskContext {
     private final Set<TopicPartition> pausedPartitions;
     private boolean commitRequested;
     // for kip-610
-    private final ErrorReporter errorReporter;
+    private final RetryWithToleranceOperator errorReporter;
 
     public WorkerSinkTaskContext(KafkaConsumer<byte[], byte[]> consumer,
                                  WorkerSinkTask sinkTask,
                                  ClusterConfigState configState,
-                                 ErrorReporter errorReporter) {
+                                 RetryWithToleranceOperator errorReporter) {
         this.offsets = new HashMap<>();
         this.timeoutMs = -1L;
         this.consumer = consumer;
@@ -166,7 +168,7 @@ public class WorkerSinkTaskContext implements SinkTaskContext {
     public ErrantRecordReporter reporter() {
         return (record, error) -> {
             if (errorReporter != null) {
-                errorReporter.report(null);
+                errorReporter.executeFailed(Stage.TASK_PUT, sinkTask.sinkTask().getClass(), record, error);
             }
         };
     }

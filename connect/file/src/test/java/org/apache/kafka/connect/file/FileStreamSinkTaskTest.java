@@ -19,11 +19,18 @@ package org.apache.kafka.connect.file;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
+import org.apache.kafka.connect.sink.SinkTask;
+import org.apache.kafka.connect.sink.SinkTaskContext;
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.easymock.Mock;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.powermock.api.easymock.PowerMock;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -33,6 +40,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +52,8 @@ public class FileStreamSinkTaskTest {
     private FileStreamSinkTask task;
     private ByteArrayOutputStream os;
     private PrintStream printStream;
+
+    private SinkTaskContext sinkTaskContext = EasyMock.mock(SinkTaskContext.class);
 
     @Rule
     public TemporaryFolder topDir = new TemporaryFolder();
@@ -60,6 +70,14 @@ public class FileStreamSinkTaskTest {
 
     @Test
     public void testPutFlush() {
+        ErrantRecordReporter errorReporter = EasyMock.mock(ErrantRecordReporter.class);
+        errorReporter.report(EasyMock.anyObject(), EasyMock.anyObject());
+        EasyMock.expectLastCall();
+
+        EasyMock.replay(sinkTaskContext, errorReporter);
+
+        task.errantRecordReporter(errorReporter);
+
         HashMap<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
         final String newLine = System.getProperty("line.separator"); 
 
@@ -74,17 +92,25 @@ public class FileStreamSinkTaskTest {
 
         task.put(Arrays.asList(
                 new SinkRecord("topic1", 0, null, null, Schema.STRING_SCHEMA, "line2", 2),
+                new SinkRecord("topic1", 0, null, null, Schema.STRING_SCHEMA, "fail", 3),
                 new SinkRecord("topic2", 0, null, null, Schema.STRING_SCHEMA, "line3", 1)
         ));
         offsets.put(new TopicPartition("topic1", 0), new OffsetAndMetadata(2L));
         offsets.put(new TopicPartition("topic2", 0), new OffsetAndMetadata(1L));
         task.flush(offsets);
         assertEquals("line1" + newLine + "line2" + newLine + "line3" + newLine, os.toString());
+
+        EasyMock.verify(sinkTaskContext, errorReporter);
     }
 
     @Test
     public void testStart() throws IOException {
+        EasyMock.expect(sinkTaskContext.reporter()).andReturn(null);
+
+        EasyMock.replay(sinkTaskContext);
+
         task = new FileStreamSinkTask();
+        task.initialize(sinkTaskContext);
         Map<String, String> props = new HashMap<>();
         props.put(FileStreamSinkConnector.FILE_CONFIG, outputFile);
         task.start(props);
@@ -115,5 +141,7 @@ public class FileStreamSinkTaskTest {
         while (--i >= 0) {
             assertEquals("line" + i, lines[i]);
         }
+
+        EasyMock.verify(sinkTaskContext);
     }
 }

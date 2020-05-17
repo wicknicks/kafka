@@ -29,6 +29,7 @@ import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +93,13 @@ public class RetryWithToleranceOperator {
     public RetryWithToleranceOperator(long errorRetryTimeout, long errorMaxDelayInMillis,
                                       ToleranceType toleranceType, Time time) {
         // using default as jsonconverter
-        this(errorRetryTimeout, errorMaxDelayInMillis, toleranceType, time, new JsonConverter());
+        this(errorRetryTimeout, errorMaxDelayInMillis, toleranceType, time, defaultConverter());
+    }
+
+    static Converter defaultConverter() {
+        JsonConverter converter = new JsonConverter();
+        converter.configure(Collections.singletonMap("converter.type", "value"));
+        return converter;
     }
 
     /**
@@ -130,8 +137,9 @@ public class RetryWithToleranceOperator {
      * @param stage the stage of failure
      * @param executingClass the class that was executing the stage.
      * @param record the record that failed to execute, and needs to be reported.
+     * @param error the reason for failure
      */
-    public <V> void executeFailed(Stage stage, Class<?> executingClass, SinkRecord record) {
+    public <V> void executeFailed(Stage stage, Class<?> executingClass, SinkRecord record, Throwable error) {
         byte[] key = converter.fromConnectData(record.topic(), record.keySchema(), record.key());
         byte[] val = converter.fromConnectData(record.topic(), record.valueSchema(), record.value());
         context.consumerRecord(new ConsumerRecord<>(record.topic(),
@@ -143,7 +151,8 @@ public class RetryWithToleranceOperator {
         ));
 
         context.currentContext(stage, executingClass);
-        context.failed();
+        context.error(error);
+        context.report();
     }
 
     /**
