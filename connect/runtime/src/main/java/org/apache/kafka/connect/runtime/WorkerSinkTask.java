@@ -138,7 +138,7 @@ class WorkerSinkTask extends WorkerTask {
     public void initialize(TaskConfig taskConfig) {
         try {
             this.taskConfig = taskConfig.originalsStrings();
-            this.context = new WorkerSinkTaskContext(consumer, this, configState);
+            this.context = new WorkerSinkTaskContext(consumer, this, configState, retryWithToleranceOperator);
         } catch (Throwable t) {
             log.error("{} Task failed initialization and will not be started.", this, t);
             onFailure(t);
@@ -185,6 +185,10 @@ class WorkerSinkTask extends WorkerTask {
     public void transitionTo(TargetState state) {
         super.transitionTo(state);
         consumer.wakeup();
+    }
+
+    public SinkTask sinkTask() {
+        return task;
     }
 
     @Override

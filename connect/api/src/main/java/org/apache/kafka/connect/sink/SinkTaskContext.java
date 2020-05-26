@@ -18,6 +18,7 @@ package org.apache.kafka.connect.sink;
 
 import org.apache.kafka.common.TopicPartition;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -94,5 +95,13 @@ public interface SinkTaskContext {
      * It is only a hint to the runtime and no timing guarantee should be assumed.
      */
     void requestCommit();
+
+    /**
+     * Get the reporter to which the sink task can report problematic or
+     * failed {@link SinkRecord} passed to the {@link SinkTask#put} method.
+     *
+     * @return a errant record reporter
+     */
+    ErrantRecordReporter reporter();
 
 }

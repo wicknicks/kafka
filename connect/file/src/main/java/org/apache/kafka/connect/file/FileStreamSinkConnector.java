@@ -23,6 +23,8 @@ import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +37,8 @@ import java.util.Map;
  */
 public class FileStreamSinkConnector extends SinkConnector {
 
+    private static final Logger log = LoggerFactory.getLogger(FileStreamSinkConnector.class);
+
     public static final String FILE_CONFIG = "file";
     private static final ConfigDef CONFIG_DEF = new ConfigDef()
         .define(FILE_CONFIG, Type.STRING, null, Importance.HIGH, "Destination filename. If not specified, the standard output will be used");
@@ -43,11 +47,12 @@ public class FileStreamSinkConnector extends SinkConnector {
 
     @Override
     public String version() {
-        return AppInfoParser.getVersion();
+        return "v2.4.1";
     }
 
     @Override
     public void start(Map<String, String> props) {
+        log.info("Starting connector {}", props);
         AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
         filename = parsedConfig.getString(FILE_CONFIG);
     }
@@ -59,6 +64,7 @@ public class FileStreamSinkConnector extends SinkConnector {
 
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
+        log.info("Creating configs");
         ArrayList<Map<String, String>> configs = new ArrayList<>();
         for (int i = 0; i < maxTasks; i++) {
             Map<String, String> config = new HashMap<>();
@@ -66,6 +72,7 @@ public class FileStreamSinkConnector extends SinkConnector {
                 config.put(FILE_CONFIG, filename);
             configs.add(config);
         }
+        log.info("Returning configs");
         return configs;
     }
 

@@ -30,6 +30,8 @@ import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.data.Timestamp;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.runtime.distributed.ClusterConfigState;
@@ -37,6 +39,7 @@ import org.apache.kafka.connect.runtime.errors.ErrorHandlingMetrics;
 import org.apache.kafka.connect.runtime.errors.ErrorReporter;
 import org.apache.kafka.connect.runtime.errors.LogReporter;
 import org.apache.kafka.connect.runtime.errors.RetryWithToleranceOperator;
+import org.apache.kafka.connect.runtime.errors.Stage;
 import org.apache.kafka.connect.runtime.errors.ToleranceType;
 import org.apache.kafka.connect.runtime.isolation.PluginClassLoader;
 import org.apache.kafka.connect.runtime.isolation.Plugins;
@@ -69,6 +72,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -300,6 +304,50 @@ public class ErrorHandlingTaskTest {
 
     private RetryWithToleranceOperator operator() {
         return new RetryWithToleranceOperator(OPERATOR_RETRY_TIMEOUT_MILLIS, OPERATOR_RETRY_MAX_DELAY_MILLIS, OPERATOR_TOLERANCE_TYPE, SYSTEM);
+    }
+
+    private static final Schema SCHEMA = SchemaBuilder.struct().name("Person")
+            .field("firstName", Schema.STRING_SCHEMA)
+            .field("lastName", Schema.STRING_SCHEMA)
+            .field("age", Schema.OPTIONAL_INT32_SCHEMA)
+            .field("bool", Schema.OPTIONAL_BOOLEAN_SCHEMA)
+            .field("short", Schema.OPTIONAL_INT16_SCHEMA)
+            .field("byte", Schema.OPTIONAL_INT8_SCHEMA)
+            .field("long", Schema.OPTIONAL_INT64_SCHEMA)
+            .field("float", Schema.OPTIONAL_FLOAT32_SCHEMA)
+            .field("double", Schema.OPTIONAL_FLOAT64_SCHEMA)
+            .field("modified", Timestamp.SCHEMA)
+            .build();
+
+    @Test
+    public void testLogReporter() {
+        Map<String, String> reportProps = new HashMap<>();
+        reportProps.put(ConnectorConfig.ERRORS_LOG_ENABLE_CONFIG, "true");
+        reportProps.put(ConnectorConfig.ERRORS_LOG_INCLUDE_MESSAGES_CONFIG, "true");
+        LogReporter reporter = new LogReporter(taskId, connConfig(reportProps), errorHandlingMetrics);
+
+        RetryWithToleranceOperator retryWithToleranceOperator = operator();
+        retryWithToleranceOperator.metrics(errorHandlingMetrics);
+        retryWithToleranceOperator.reporters(singletonList(reporter));
+
+        final Struct struct = new Struct(SCHEMA)
+                .put("firstName", "Alex")
+                .put("lastName", "Smith")
+                .put("bool", true)
+                .put("short", (short) 1234)
+                .put("byte", (byte) -32)
+                .put("long", 12425436L)
+                .put("float", (float) 2356.3)
+                .put("double", -2436546.56457)
+                .put("age", 21)
+                .put("modified", new Date(1474661402123L));
+        SinkRecord record = new SinkRecord(TOPIC, 1, null, null, SCHEMA, struct, 42);
+
+        PowerMock.replayAll();
+
+        retryWithToleranceOperator.executeFailed(Stage.TASK_PUT, SinkTask.class, record, new ConnectException("blah"));
+
+        PowerMock.verifyAll();
     }
 
     @Test

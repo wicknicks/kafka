@@ -20,6 +20,10 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.IllegalWorkerStateException;
 import org.apache.kafka.connect.runtime.distributed.ClusterConfigState;
+import org.apache.kafka.connect.runtime.errors.ErrorReporter;
+import org.apache.kafka.connect.runtime.errors.RetryWithToleranceOperator;
+import org.apache.kafka.connect.runtime.errors.Stage;
+import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,16 +45,26 @@ public class WorkerSinkTaskContext implements SinkTaskContext {
     private final ClusterConfigState configState;
     private final Set<TopicPartition> pausedPartitions;
     private boolean commitRequested;
+    // for kip-610
+    private final RetryWithToleranceOperator errorReporter;
 
     public WorkerSinkTaskContext(KafkaConsumer<byte[], byte[]> consumer,
                                  WorkerSinkTask sinkTask,
-                                 ClusterConfigState configState) {
+                                 ClusterConfigState configState,
+                                 RetryWithToleranceOperator errorReporter) {
         this.offsets = new HashMap<>();
         this.timeoutMs = -1L;
         this.consumer = consumer;
         this.sinkTask = sinkTask;
         this.configState = configState;
         this.pausedPartitions = new HashSet<>();
+        this.errorReporter = errorReporter;
+    }
+
+    public WorkerSinkTaskContext(KafkaConsumer<byte[], byte[]> consumer,
+                                 WorkerSinkTask sinkTask,
+                                 ClusterConfigState configState) {
+        this(consumer, sinkTask, configState, null);
     }
 
     @Override
@@ -148,6 +162,15 @@ public class WorkerSinkTaskContext implements SinkTaskContext {
     public void requestCommit() {
         log.debug("{} Requesting commit", this);
         commitRequested = true;
+    }
+
+    @Override
+    public ErrantRecordReporter reporter() {
+        return (record, error) -> {
+            if (errorReporter != null) {
+                errorReporter.executeFailed(Stage.TASK_PUT, sinkTask.sinkTask().getClass(), record, error);
+            }
+        };
     }
 
     public boolean isCommitRequested() {
